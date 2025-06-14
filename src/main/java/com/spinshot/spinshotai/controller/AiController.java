@@ -4,12 +4,19 @@ import com.spinshot.spinshotai.model.request.AiGenDrillsRequest;
 import com.spinshot.spinshotai.model.request.AudioToTextRequest;
 import com.spinshot.spinshotai.model.response.AiGenDrillsResponse;
 import com.spinshot.spinshotai.model.response.AudioToTextResponse;
+import com.spinshot.spinshotai.model.response.ConfigInfo;
 import com.spinshot.spinshotai.model.response.LoginResponse;
+import com.spinshot.spinshotai.service.MockService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
 public class AiController {
+
+    @Autowired
+    private MockService mockService;
 
     @GetMapping("/ping")
     public String hello() {
@@ -29,9 +36,13 @@ public class AiController {
     public AudioToTextResponse audioToText(@RequestHeader("signature") String signature, @RequestBody AudioToTextRequest request) {
 
         AudioToTextResponse response = new AudioToTextResponse();
-        response.setCode(-1);
-        response.setMsg("语音转文本失败");
-
+        String result = mockService.audioToText();
+        if (result == null || result.isEmpty()) {
+            response.setCode(-1);
+            response.setMsg("语音转文本失败");
+        }
+        response.setCode(0);
+        response.setText(result);
         return response;
     }
 
@@ -39,9 +50,14 @@ public class AiController {
     public AiGenDrillsResponse genShotConfig(@RequestHeader("signature") String signature, @RequestBody AiGenDrillsRequest request) {
 
         AiGenDrillsResponse response = new AiGenDrillsResponse();
-        response.setCode(-1);
-        response.setMsg("AI生成Drill配置失败");
-
+        ConfigInfo configInfo = mockService.getConfigInfo();
+        if (configInfo == null) {
+            response.setCode(-1);
+            response.setMsg("AI服务繁忙中，请稍后重试");
+            return response;
+        }
+        response.setConfigInfo(configInfo);
+        response.setCode(0);
         return response;
     }
 
